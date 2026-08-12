@@ -82,6 +82,44 @@ def generate_report(run_dir: Path, *, include_preview3d: bool = True) -> Path:
             sections.append(f"<h2>{label}</h2>")
             sections.append(f'<img src="{img_path.name}" style="max-width:100%" />')
 
+    nest_path = run_dir / "13_nesting.json"
+    if nest_path.exists():
+        nest = json.loads(nest_path.read_text(encoding="utf-8"))
+        baseline = nest.get("grid_baseline_per_sheet")
+        rows = [
+            ("Strategy", nest.get("strategy", "")),
+            (
+                "Quantity",
+                f"{nest.get('quantity_placed')} placed of "
+                f"{nest.get('quantity_requested')} requested",
+            ),
+            ("Sheets", str(nest.get("sheet_count"))),
+            (
+                "Sheet",
+                f"{nest.get('sheet_width_mm')} x {nest.get('sheet_height_mm')} mm, "
+                f"separation {nest.get('min_separation_mm')} mm",
+            ),
+            ("Sheet area used", f"{nest.get('utilization_pct')}%"),
+        ]
+        if baseline:
+            rows.append(
+                (
+                    "Capacity",
+                    f"{nest.get('max_parts_on_a_sheet')} on the fullest sheet; a naive "
+                    f"grid fits {baseline} per sheet. Sheet area used is limited by the "
+                    f"order quantity, not the packing, until you order {baseline}.",
+                )
+            )
+        sections.append("<h2>Nesting</h2><table>")
+        for key, value in rows:
+            sections.append(
+                f"<tr><th align='left'>{html.escape(key)}</th>"
+                f"<td>{html.escape(str(value))}</td></tr>"
+            )
+        sections.append("</table>")
+        for warn in nest.get("warnings", []):
+            sections.append(f"<p style='color:#a60'>{html.escape(str(warn))}</p>")
+
     nest_sheets = sorted(run_dir.glob("nest_sheet*.png"))
     for sheet_img in nest_sheets:
         sections.append(f"<h3>{html.escape(sheet_img.stem)}</h3>")

@@ -376,6 +376,11 @@ class NestingResult(BaseModel):
     min_separation_mm: float
     placements: list[NestingPlacement]
     warnings: list[str] = Field(default_factory=list)
+    strip_density: float | None = None
+    sheet_utilization_pct: list[float] = Field(default_factory=list)
+    grid_baseline_per_sheet: int | None = None
+    max_parts_on_a_sheet: int | None = None
+    sheet_capacity_utilization_pct: float | None = None
 
 
 class DxfExportResult(BaseModel):

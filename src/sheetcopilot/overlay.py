@@ -418,6 +418,12 @@ def render_nest_preview(
     if not sheet_indices:
         sheet_indices = list(range(max(1, nesting.sheet_count)))
 
+    # A shorter nest must not leave last run's sheets behind for the report to pick up.
+    keep = {output_path.parent / f"nest_sheet{i + 1}.png" for i in sheet_indices}
+    for stale in output_path.parent.glob("nest_sheet*.png"):
+        if stale not in keep:
+            stale.unlink()
+
     sheet_images: list[Image.Image] = []
     written: list[Path] = []
 

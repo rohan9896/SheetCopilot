@@ -152,6 +152,66 @@ def _arc_extremes(prim: GeometryPrimitive) -> list[tuple[float, float]]:
     return points
 
 
+def _op_diameter_mm(op: dict) -> float | None:
+    for key in ("outer_diameter_mm", "diameter_mm"):
+        val = op.get(key)
+        if val is not None:
+            return float(val)
+    return None
+
+
+def _merge_semantic_secondary_ops(
+    geometric_ops: list[dict],
+    semantic: LLMSemanticResult,
+    diameter_tol_mm: float = 2.0,
+) -> list[dict]:
+    """
+    Merge LLM secondary-operation notes onto matching geometric ops.
+
+    An LLM op matches when its type equals a geometric op's type and, when the
+    LLM supplies a diameter, it is close to the geometric outer/diameter value.
+    Unmatched LLM ops are dropped (e.g. section-view prose with no geometry).
+    """
+    merged = [dict(op) for op in geometric_ops]
+
+    llm_ops: list[dict] = [dict(op) for op in semantic.secondary_operations]
+    for hole in semantic.holes:
+        if hole.operation == "secondary":
+            llm_ops.append(
+                {
+                    "type": hole.secondary_type or "secondary",
+                    "diameter_mm": hole.diameter_mm,
+                    "notes": hole.notes,
+                }
+            )
+
+    for llm_op in llm_ops:
+        op_type = llm_op.get("type", "secondary")
+        llm_diameter = _op_diameter_mm(llm_op)
+        llm_notes = llm_op.get("notes")
+
+        matches = [
+            idx
+            for idx, geom_op in enumerate(merged)
+            if geom_op.get("type") == op_type
+            and (
+                llm_diameter is None
+                or (
+                    (d := _op_diameter_mm(geom_op)) is not None
+                    and abs(d - llm_diameter) <= diameter_tol_mm
+                )
+            )
+        ]
+        if not matches:
+            continue
+
+        for idx in matches:
+            if llm_notes and not merged[idx].get("notes"):
+                merged[idx]["notes"] = llm_notes
+
+    return merged
+
+
 def _compute_bbox_mm(outer: list[GeometryPrimitive]) -> tuple[float, float, float, float] | None:
     xs: list[float] = []
     ys: list[float] = []
@@ -246,21 +306,10 @@ def assemble_part_definition(
                 )
             )
 
-    # Merge LLM secondary ops
-    for op in semantic.secondary_operations:
-        if op not in secondary_ops:
-            secondary_ops.append(op)
+    secondary_ops = _merge_semantic_secondary_ops(secondary_ops, semantic)
 
     for h in semantic.holes:
-        if h.operation == "secondary":
-            secondary_ops.append(
-                {
-                    "type": h.secondary_type or "secondary",
-                    "diameter_mm": h.diameter_mm,
-                    "notes": h.notes,
-                }
-            )
-        elif h.operation == "cut" and not any(
+        if h.operation == "cut" and not any(
             abs(hc.diameter_mm - h.diameter_mm) < 0.5 for hc in hole_classifications
         ):
             hole_classifications.append(h)

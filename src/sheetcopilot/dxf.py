@@ -130,6 +130,11 @@ def export_nested_dxf(
         doc.saveas(out)
         paths.append(out)
 
+    # A shorter nest must not leave last run's sheet files behind.
+    for stale in output_dir.glob(f"{part_num}_{revision}_sheet*.dxf"):
+        if stale not in paths:
+            stale.unlink()
+
     return paths
 
 

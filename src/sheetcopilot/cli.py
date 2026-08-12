@@ -105,6 +105,10 @@ def report(ctx: click.Context, no_preview3d: bool) -> None:
 @cli.command()
 @click.option("--provider", default="auto", show_default=True)
 @click.option("--quantity", default=4, show_default=True)
+@click.option("--sheet-width", default=2500.0, show_default=True, type=float)
+@click.option("--sheet-height", default=1250.0, show_default=True, type=float)
+@click.option("--kerf", default=3.0, show_default=True, type=float)
+@click.option("--clearance", default=5.0, show_default=True, type=float)
 @click.option(
     "--skip-llm",
     is_flag=True,
@@ -116,6 +120,10 @@ def run_all(
     ctx: click.Context,
     provider: str,
     quantity: int,
+    sheet_width: float,
+    sheet_height: float,
+    kerf: float,
+    clearance: float,
     skip_llm: bool,
     no_preview3d: bool,
 ) -> None:
@@ -187,7 +195,12 @@ def run_all(
         engine = get_nesting_engine("spyrrow")
         try:
             nesting = engine.nest(
-                part, quantity, 2500.0, 1250.0, 3.0, 5.0,
+                part,
+                quantity,
+                sheet_width,
+                sheet_height,
+                kerf,
+                clearance,
                 manufacturing_ready=validation.manufacturing_ready,
             )
             write_json(run_dir, "13_nesting", nesting.model_dump())
@@ -197,8 +210,17 @@ def run_all(
             render_nest_preview(part, nesting, preview_path)
             click.echo(
                 f"Nested {nesting.quantity_placed}/{nesting.quantity_requested} "
-                f"on {nesting.sheet_count} sheet(s)"
+                f"on {nesting.sheet_count} sheet(s) — {nesting.utilization_pct:.1f}% "
+                f"sheet area used [{nesting.strategy}]"
             )
+            if nesting.grid_baseline_per_sheet:
+                click.echo(
+                    f"  Capacity: {nesting.max_parts_on_a_sheet} part(s) on the fullest "
+                    f"sheet vs grid baseline {nesting.grid_baseline_per_sheet}/sheet. "
+                    f"Order at least {nesting.grid_baseline_per_sheet} to fill a sheet."
+                )
+            for warn in nesting.warnings:
+                click.echo(f"  [nesting] {warn}", err=True)
         except ManufacturingNotReadyError as exc:
             click.echo(f"Nesting blocked: {exc}", err=True)
     else:
