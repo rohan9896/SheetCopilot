@@ -1,0 +1,38 @@
+[project]
+name = "sheetcopilot"
+version = "0.1.0"
+description = "Drawing-to-CNC pipeline prototype for SheetCopilot"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "pdfplumber>=0.11.10",
+    "pypdfium2>=4.30.0",
+    "ezdxf>=1.4.4",
+    "shapely>=2.1.2",
+    "spyrrow>=0.9.0",
+    "pydantic>=2.10.0",
+    "pillow>=11.0.0",
+    "numpy>=2.0.0",
+    "click>=8.1.0",
+    "httpx>=0.28.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+]
+
+[project.scripts]
+sheetcopilot = "sheetcopilot.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/sheetcopilot"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

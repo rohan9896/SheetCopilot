@@ -1,0 +1,41 @@
+{
+  "scale": {
+    "mm_per_pt": 0.8823,
+    "tolerance_pct": 0.5
+  },
+  "outer": {
+    "width_mm": 583.3,
+    "height_mm": 185.0,
+    "tolerance_mm": 2.0,
+    "closed": true,
+    "self_intersections": 0,
+    "area_mm2": 91380.0,
+    "max_primitives": 12,
+    "arc_radii_mm": [3020.0, 3190.0],
+    "arc_radius_tolerance_pct": 2.0
+  },
+  "holes": [
+    {
+      "diameter_mm": 18.0,
+      "count": 3,
+      "tolerance_mm": 0.5
+    }
+  ],
+  "secondary_operations": [
+    {
+      "type": "countersink",
+      "diameter_mm": 34.0,
+      "count": 3,
+      "tolerance_mm": 0.5
+    }
+  ],
+  "metadata": {
+    "thickness_mm": 25.0,
+    "material": "S235J2G3"
+  },
+  "prohibited": {
+    "max_bbox_width_mm": 700,
+    "no_geometry_in_regions": ["page_frame", "title_block"],
+    "no_cut_entities_outside_main_view": true
+  }
+}
